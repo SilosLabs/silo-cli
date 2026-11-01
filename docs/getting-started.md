@@ -115,7 +115,7 @@ silo start
 ```
 
 This creates the full stack:
-1. **Docker bridge network** (`silo-sandbox-net`) — internal/no-NAT on native Linux; proxy-routed on Docker Desktop
+1. **Docker bridge network** (`silo-sandbox-net`) — internal/no-NAT on every platform; on Docker Desktop a `silo-gateway` sidecar relays the proxy port
 2. **Inference proxy daemon** — listens on `:8199` on the host
 3. **Sandbox container** — hardened, isolated, with all security flags applied
 

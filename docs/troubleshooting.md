@@ -131,9 +131,10 @@ echo $http_proxy
 echo $https_proxy
 # Should show: http://llm.gateway:8199
 
-# Check /etc/hosts
-cat /etc/hosts | grep llm.gateway
-# Should show: <host-ip>   llm.gateway
+# Check that llm.gateway resolves
+getent hosts llm.gateway
+# Native Linux: the host IP (from the --add-host entry in /etc/hosts)
+# Docker Desktop: the silo-gateway sidecar's IP (Docker DNS alias, not in /etc/hosts)
 
 # Exit sandbox and check the Docker network
 exit
@@ -443,12 +444,10 @@ docker network rm silo-sandbox-net
 # Enter the sandbox
 silo connect
 
-# Check hosts file
-cat /etc/hosts
-# Should show: <host-ip>  llm.gateway
-
-# Test resolution
-ping llm.gateway  # Should resolve to host IP
+# Test resolution (ping won't work: the sandbox drops CAP_NET_RAW)
+getent hosts llm.gateway
+# Native Linux: the host IP (from the --add-host entry in /etc/hosts)
+# Docker Desktop: the silo-gateway sidecar's IP (Docker DNS alias, not in /etc/hosts)
 
 # Test proxy connection
 curl http://llm.gateway:8199/_silo/health

@@ -59,7 +59,7 @@ silo start
   ├─ readConfig()            Read config from disk (via conf)
   ├─ assertDockerAvailable() docker info (smoke test)
   ├─ isContainerRunning()    docker inspect (guard against duplicates)
-  ├─ ensureSiloNetwork()     docker network create (internal on native Linux)
+  ├─ ensureSiloNetwork()     docker network create --internal (every platform)
   ├─ ensureProxyDaemon()     Spawn proxy process (detached)
   └─ startContainer()        docker run [hardened flags]
 ```
@@ -108,9 +108,9 @@ The agent process runs inside a hardened Docker container built from `sandbox/Do
 | `--security-opt no-new-privileges` | Blocks setuid/setgid escalation |
 | `--pids-limit 128` | Fork-bomb prevention |
 | `--cpus <n>` / `--memory <m>` | Resource throttles (from config) |
-| `--network silo-sandbox-net` | SILO bridge network (internal on native Linux, standard bridge on Docker Desktop) |
-| `--add-host llm.gateway:host-gateway` | Resolve `llm.gateway` to host IP |
-| `--add-host <svc>.gateway:host-gateway` | Resolve integration gateways to host IP |
+| `--network silo-sandbox-net` | SILO bridge network, created `--internal` on every platform (no direct internet route) |
+| `--add-host llm.gateway:host-gateway` | Native Linux only: resolve `llm.gateway` to host IP (on Docker Desktop the `silo-gateway` sidecar carries this alias) |
+| `--add-host <svc>.gateway:host-gateway` | Native Linux only: resolve integration gateways to host IP (sidecar aliases on Docker Desktop) |
 | `--label managed-by=silo` | Discovery label for `silo list` |
 
 **Environment variables injected:**
@@ -119,7 +119,7 @@ The agent process runs inside a hardened Docker container built from `sandbox/Do
 |---|---|---|
 | `http_proxy` / `HTTP_PROXY` | `http://llm.gateway:<port>` | Route HTTP through proxy |
 | `https_proxy` / `HTTPS_PROXY` | `http://llm.gateway:<port>` | Route HTTPS through proxy |
-| `no_proxy` / `NO_PROXY` | `localhost,127.0.0.1,::1` | Bypass proxy for loopback |
+| `no_proxy` / `NO_PROXY` | `localhost,127.0.0.1,::1,llm.gateway` | Bypass proxy for loopback and for the proxy itself |
 | `SILO_SANDBOX` | `1` | Indicates SILO sandbox mode |
 
 **Volume mounts:**

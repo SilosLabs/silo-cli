@@ -9,7 +9,7 @@
 #   --cap-drop ALL           All Linux capabilities dropped
 #   --security-opt no-new-privileges
 #   --pids-limit 128         Fork-bomb protection
-#   --network none           No direct network (inference proxy handles egress)
+#   --network silo-sandbox-net  Internal bridge, no direct internet route
 # =============================================================================
 
 FROM python:3.12-slim AS base
