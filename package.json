@@ -4,13 +4,13 @@
   "description": "Secure CLI platform for running AI agents in isolated Docker sandboxes",
   "type": "module",
   "author": "Divyansh Chaurasia",
-  "homepage": "https://github.com/Asdivyansh/silo-cli#readme",
+  "homepage": "https://github.com/SilosLabs/silo-cli#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Asdivyansh/silo-cli.git"
+    "url": "git+https://github.com/SilosLabs/silo-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/Asdivyansh/silo-cli/issues"
+    "url": "https://github.com/SilosLabs/silo-cli/issues"
   },
   "bin": {
     "silo": "dist/cli.js"

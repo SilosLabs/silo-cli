@@ -23,7 +23,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/Asdivyansh/silo-cli.git
+git clone https://github.com/SilosLabs/silo-cli.git
 cd silo-cli
 
 # Install dependencies
