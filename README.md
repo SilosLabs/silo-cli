@@ -49,7 +49,7 @@ SILO is a self-hosted developer CLI tool designed to run untrusted AI agents ins
 **From source:**
 
 ```bash
-git clone https://github.com/Asdivyansh/silo-cli.git
+git clone https://github.com/SilosLabs/silo-cli.git
 cd silo-cli
 npm install
 npm run build
@@ -620,7 +620,7 @@ For vulnerability reports, please follow [SECURITY.md](SECURITY.md) instead of o
 4. **Push** to the branch (`git push origin feat/amazing-feature`)
 5. **Open** a Pull Request
 
-> **First time contributing?** Look for issues labeled [`good first issue`](https://github.com/Asdivyansh/silo-cli/labels/good%20first%20issue).
+> **First time contributing?** Look for issues labeled [`good first issue`](https://github.com/SilosLabs/silo-cli/labels/good%20first%20issue).
 
 ---
 
