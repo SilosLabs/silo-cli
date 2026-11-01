@@ -554,7 +554,7 @@ SILO implements **defence in depth** across multiple layers:
 | Layer | What It Does | How |
 |---|---|---|
 | **Container hardening** | Prevents privilege escalation and system damage | Non-root user, read-only fs, no capabilities, PID limits |
-| **Network isolation** | Restricts egress paths | Native Linux no-NAT bridge; Docker Desktop proxy-routed egress with source allowlist |
+| **Network isolation** | Restricts egress paths | Internal (no-NAT) Docker bridge on every platform; `silo-gateway` sidecar relays the proxy on Docker Desktop |
 | **Policy engine** | Controls which hosts the agent can reach | YAML rules evaluated per-request; deny by default |
 | **Credential isolation** | Keeps API keys away from the agent | Keys stored host-side; proxy injects at request time |
 | **Audit trail** | Full visibility into agent behaviour | Unified JSONL log with LLM, tool, egress, trace events |

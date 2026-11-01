@@ -224,7 +224,7 @@ ensureDecrypted("sk-abc123");      // → returns as-is (plaintext passthrough)
 | `https_proxy` | Same as `http_proxy` | Container HTTP clients | `http://llm.gateway:<port>` |
 | `HTTP_PROXY` | Same (uppercase variant) | Container HTTP clients | Same |
 | `HTTPS_PROXY` | Same (uppercase variant) | Container HTTP clients | Same |
-| `no_proxy` | Bypass proxy for these hosts | Container HTTP clients | `localhost,127.0.0.1,::1` |
+| `no_proxy` | Bypass proxy for these hosts | Container HTTP clients | `localhost,127.0.0.1,::1,llm.gateway` |
 | `NO_PROXY` | Same (uppercase variant) | Container HTTP clients | Same |
 
 ### Debug Mode

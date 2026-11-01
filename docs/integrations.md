@@ -46,7 +46,7 @@ silo integrations add my-api
 silo stop && silo start
 ```
 
-The new gateway alias is registered as a Docker `--add-host` entry, so the container needs to be recreated.
+The new gateway alias is registered as a Docker `--add-host` entry on native Linux, or as a DNS alias on the `silo-gateway` sidecar on Docker Desktop, so the container needs to be recreated (`silo start` also replaces the sidecar when its aliases change).
 
 This works the same in default and `--browser` framework runs. Browser mode adds Chromium and browser tmpfs mounts, but integration gateway aliases such as `slack.gateway` and `github.gateway` still route through the host proxy and never expose tokens inside the sandbox.
 

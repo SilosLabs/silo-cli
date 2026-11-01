@@ -31,7 +31,8 @@ The SILO inference proxy is a lightweight HTTP proxy server that runs on the hos
 └──────────────┬──────────────────────┘
                │
                │  http://llm.gateway:8199/v1/chat/completions
-               │  (llm.gateway resolves to host IP via --add-host)
+               │  (llm.gateway → host IP via --add-host on Linux,
+               │   or the silo-gateway sidecar on Docker Desktop)
                ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  PROXY SERVER  (port 8199, host machine)                     │
@@ -344,7 +345,7 @@ Container HTTP request
   ↓
 http_proxy env var (set by SILO)
   ↓
-DNS: llm.gateway → host-gateway (Docker resolves to host IP)
+DNS: llm.gateway → host IP (Linux, --add-host) or silo-gateway sidecar (Docker Desktop)
   ↓
 TCP connection to host:8199
   ↓

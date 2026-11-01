@@ -11,7 +11,7 @@ SILO implements **defence in depth** across six isolation layers. Each layer is 
 | Layer | Threat Mitigated | Mechanism |
 |---|---|---|
 | **Container Hardening** | Privilege escalation, system damage | Non-root, read-only FS, no capabilities, PID limits |
-| **Network Isolation** | Data exfiltration, C2 communication | Native Linux no-NAT bridge; Docker Desktop proxy-routed egress with proxy source allowlist |
+| **Network Isolation** | Data exfiltration, C2 communication | Internal (no-NAT) Docker bridge on every platform; `silo-gateway` sidecar relays the proxy on Docker Desktop |
 | **Policy Engine** | Unauthorised outbound access | YAML rules evaluated per-request, deny by default |
 | **Credential Isolation** | API key theft | Keys stored host-side, injected at request time |
 | **Encryption at Rest** | Config file theft, key exposure | AES-256-GCM with machine-bound PBKDF2 key |

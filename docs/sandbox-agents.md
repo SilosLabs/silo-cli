@@ -57,9 +57,9 @@ The key insight: **your agent doesn't know it's sandboxed.** SILO uses standard 
 
 1. **`http_proxy` / `https_proxy` environment variables** — Set automatically inside the container. Standard HTTP clients (`curl`, Python `requests`, `httpx`, `pip`, `npm`) all respect these and route traffic through the proxy without any code changes.
 
-2. **`llm.gateway` DNS alias** — Docker's `--add-host` injects this hostname into the container's `/etc/hosts`, resolving to the host machine's IP. Agents can target `http://llm.gateway:8199/v1/...` as their LLM endpoint.
+2. **`llm.gateway` DNS alias** — On native Linux, Docker's `--add-host` injects this hostname into the container's `/etc/hosts`, resolving to the host machine's IP. On Docker Desktop for macOS/Windows, it is a DNS alias of the `silo-gateway` sidecar, which relays to the host proxy. Either way, agents can target `http://llm.gateway:8199/v1/...` as their LLM endpoint.
 
-3. **SILO Docker bridge** — The container runs on `silo-sandbox-net`. On native Linux this network is created with `--internal` for no-NAT isolation; on Docker Desktop for macOS/Windows it uses proxy-routed HTTP clients plus a Docker-network source allowlist on the host proxy.
+3. **SILO Docker bridge** — The container runs on `silo-sandbox-net`, created with `--internal` (no NAT, no direct internet route) on every platform. On Docker Desktop, where an internal network has no route to the host, the `silo-gateway` sidecar relays the proxy port.
 
 ---
 
@@ -425,7 +425,7 @@ Credential-managed integrations keep the same behavior in browser mode. Gateway 
 | Feature | NemoClaw | SILO |
 |---|---|---|
 | **Container hardening** | Basic Docker isolation | Read-only FS, cap-drop ALL, no-new-privileges, PID limits, noexec /tmp, non-root, SILO network, resource throttles |
-| **Network model** | Container has internet access | Native Linux no-NAT bridge; Docker Desktop proxy-routed egress with host-proxy source allowlist |
+| **Network model** | Container has internet access | Internal (no-NAT) bridge on every platform; `silo-gateway` sidecar relays the proxy on Docker Desktop |
 | **Egress policy** | No policy engine | Declarative YAML policy, glob patterns, deny-by-default, hot-reload |
 | **API key protection** | Keys passed into container via env vars | Keys **never enter** the container — injected at proxy level |
 | **Interactive interception** | Not available | Real-time approve/deny prompts for unauthorized requests |
