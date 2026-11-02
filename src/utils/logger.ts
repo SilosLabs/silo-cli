@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import boxen from "boxen";
+import { VERSION } from "../version.js";
 
 const PREFIX = {
   info: chalk.cyan("ℹ"),
@@ -39,7 +40,7 @@ export function printBanner(): void {
   const banner = boxen(
     chalk.bold.cyan("SILO") +
       "  " +
-      chalk.dim("v0.2.0") +
+      chalk.dim(`v${VERSION}`) +
       "\n" +
       chalk.dim("Secure AI Agent Sandbox Orchestrator"),
     {
