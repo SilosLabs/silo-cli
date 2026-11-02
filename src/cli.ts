@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { assertNodeVersion } from "./utils/system.js";
+import { VERSION } from "./version.js";
 import "./frameworks/definitions.js";
 import { loadCustomFrameworks } from "./frameworks/custom.js";
 import { runOnboard } from "./commands/onboard.js";
@@ -57,7 +58,7 @@ program
   .description(
     "Secure CLI platform for running AI agents in isolated Docker sandboxes",
   )
-  .version("0.2.0", "-V, --version", "Print version")
+  .version(VERSION, "-V, --version", "Print version")
   .helpOption("-h, --help", "Show help");
 
 // ── onboard ────────────────────────────────────────────────────────────────

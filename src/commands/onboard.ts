@@ -18,6 +18,7 @@ import {
   getPreset,
 } from "../policy/presets.js";
 import type { Policy } from "../policy/engine.js";
+import { VERSION } from "../version.js";
 
 // Default models per provider
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
@@ -193,7 +194,7 @@ async function animateWelcome(): Promise<void> {
   }
 
   console.log();
-  console.log(`  ${chalk.bold.white("SILO")} ${chalk.cyan("v0.2.0")} ${chalk.dim("•")} ${chalk.white("Secure AI Agent Sandbox")}`);
+  console.log(`  ${chalk.bold.white("SILO")} ${chalk.cyan(`v${VERSION}`)} ${chalk.dim("•")} ${chalk.white("Secure AI Agent Sandbox")}`);
   console.log();
 
   // Play Star Wars style hyperspace jump animation under the logo
@@ -206,7 +207,7 @@ async function animateWelcome(): Promise<void> {
     console.log("  " + grad(line));
   }
   console.log();
-  console.log(`  ${chalk.bold.white("SILO")} ${chalk.cyan("v0.2.0")} ${chalk.dim("•")} ${chalk.white("Secure AI Agent Sandbox")}`);
+  console.log(`  ${chalk.bold.white("SILO")} ${chalk.cyan(`v${VERSION}`)} ${chalk.dim("•")} ${chalk.white("Secure AI Agent Sandbox")}`);
   console.log();
 
   const os = `${platform()} ${arch()} (${release()})`;

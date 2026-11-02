@@ -18,6 +18,7 @@ import Table from "cli-table3";
 import { readConfig, patchConfig } from "../config/manager.js";
 import type { IntegrationConfig, IntegrationAuthType } from "../config/schema.js";
 import { getTemplate, listTemplates } from "../integrations/templates.js";
+import { VERSION } from "../version.js";
 import { log, section } from "../utils/logger.js";
 
 // ---------------------------------------------------------------------------
@@ -320,7 +321,7 @@ export async function runIntegrationsTest(name: string): Promise<void> {
           method: "GET",
           timeout: 5000,
           headers: {
-            "user-agent": "SILO/0.2.0",
+            "user-agent": `SILO/${VERSION}`,
           },
         },
         (res) => {
