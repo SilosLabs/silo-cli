@@ -9,6 +9,7 @@ import { startContainer } from "../docker/runner.js";
 import { SILO_NETWORK } from "../docker/templates.js";
 import { ensureGatewaySidecar, needsGatewaySidecar } from "../docker/gateway.js";
 import { log, printBanner } from "../utils/logger.js";
+import { runBuild } from "./build.js";
 import {
   assertDockerAvailable,
   isContainerRunning,
@@ -102,6 +103,13 @@ export async function runStart(opts: StartOptions): Promise<void> {
       log.error(err instanceof Error ? err.message : String(err));
       process.exit(1);
     }
+  }
+
+  // ── Rebuild image (--rebuild) ───────────────────────────────────────────
+  // runBuild tags the image exactly as it is resolved below: the configured
+  // sandbox image, or the framework image for --framework / --browser.
+  if (opts.rebuild) {
+    await runBuild({ framework: framework?.id, browser: opts.browser });
   }
 
   // ── Resolve image ───────────────────────────────────────────────────────

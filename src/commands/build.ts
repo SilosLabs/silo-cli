@@ -49,10 +49,16 @@ function resolveSandboxDir(): string {
 
 interface BuildOptions {
   tag?: string;
-  noCache: boolean;
+  /** False when `--no-cache` is passed (Commander stores negatable flags this way). */
+  cache?: boolean;
   framework?: string;
   allFrameworks?: boolean;
   browser?: boolean;
+}
+
+/** The `docker build` cache flag for the given `cache` option. */
+export function noCacheArgs(cache: boolean | undefined): string[] {
+  return cache === false ? ["--no-cache"] : [];
 }
 
 export async function runBuild(opts: BuildOptions): Promise<void> {
@@ -97,7 +103,7 @@ export async function runBuild(opts: BuildOptions): Promise<void> {
     "build",
     "--file", dockerfilePath,
     "--tag", imageTag,
-    ...(opts.noCache ? ["--no-cache"] : []),
+    ...noCacheArgs(opts.cache),
     sandboxDir,
   ];
 
@@ -160,7 +166,7 @@ async function buildFrameworkImage(
     "build",
     "--file", dockerfilePath,
     "--tag", imageTag,
-    ...(opts.noCache ? ["--no-cache"] : []),
+    ...noCacheArgs(opts.cache),
     contextDir,
   ];
 
@@ -204,7 +210,7 @@ async function buildAllFrameworks(
         "build",
         "--file", dockerfilePath,
         "--tag", imageTag,
-        ...(opts.noCache ? ["--no-cache"] : []),
+        ...noCacheArgs(opts.cache),
         contextDir,
       ]);
 

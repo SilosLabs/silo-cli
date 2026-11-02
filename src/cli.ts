@@ -103,7 +103,7 @@ program
   .option("-f, --framework <id>", "Build image with a framework pre-installed (e.g. crewai, langgraph)")
   .option("--all-frameworks", "Build images for all supported frameworks", false)
   .option("--browser", "Build a browser-capable framework image", false)
-  .action(async (opts: { tag?: string; noCache: boolean; framework?: string; allFrameworks: boolean; browser: boolean }) => {
+  .action(async (opts: { tag?: string; cache: boolean; framework?: string; allFrameworks: boolean; browser: boolean }) => {
     await runBuild(opts);
   });
 
