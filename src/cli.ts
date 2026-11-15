@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, CommanderError } from "commander";
 import { assertNodeVersion } from "./utils/system.js";
 import { VERSION } from "./version.js";
 import "./frameworks/definitions.js";
@@ -427,8 +427,11 @@ program.exitOverride();
 try {
   await program.parseAsync(process.argv);
 } catch (err) {
-  if (err instanceof Error && err.constructor.name !== "CommanderError") {
-    console.error(`\n  ${err.message}\n`);
-    process.exit(1);
+  // Commander has already printed its message, help, or version text; keep
+  // its exit code (0 for --help/--version, 1 for unknown commands/options).
+  if (err instanceof CommanderError) {
+    process.exit(err.exitCode);
   }
+  console.error(`\n  ${err instanceof Error ? err.message : String(err)}\n`);
+  process.exit(1);
 }
