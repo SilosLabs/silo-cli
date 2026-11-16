@@ -11,6 +11,13 @@ import { fileURLToPath } from "node:url";
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 let home: string;
 
+// conf stores the config under $XDG_CONFIG_HOME on Linux when it's set (CI
+// runners set it), ignoring HOME. Pin it inside each throwaway HOME, or every
+// test shares, and writes to, the runner's real config directory.
+function isolatedEnv(homeDir: string): Record<string, string> {
+  return { HOME: homeDir, XDG_CONFIG_HOME: join(homeDir, ".config") };
+}
+
 beforeAll(() => {
   home = mkdtempSync(join(tmpdir(), "silo-cli-test-"));
 });
@@ -22,7 +29,7 @@ afterAll(() => {
 function silo(...args: string[]) {
   return execa("node", ["--import", "tsx", "src/cli.ts", ...args], {
     cwd: repoRoot,
-    env: { HOME: home },
+    env: isolatedEnv(home),
     reject: false,
   });
 }
@@ -88,7 +95,7 @@ describe("exit codes when a command fails", () => {
       }));`;
     await execa("node", ["--import", "tsx", "--input-type=module", "-e", write], {
       cwd: repoRoot,
-      env: { HOME: configuredHome },
+      env: isolatedEnv(configuredHome),
     });
   }, 30_000);
 
@@ -100,7 +107,7 @@ describe("exit codes when a command fails", () => {
   function siloWith(homeDir: string, fail: string, ...args: string[]) {
     return execa("node", ["--import", "tsx", "src/cli.ts", ...args], {
       cwd: repoRoot,
-      env: { HOME: homeDir, PATH: `${fakeBin}:${process.env.PATH}`, FAKE_DOCKER_FAIL: fail },
+      env: { ...isolatedEnv(homeDir), PATH: `${fakeBin}:${process.env.PATH}`, FAKE_DOCKER_FAIL: fail },
       reject: false,
     });
   }
