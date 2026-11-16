@@ -240,6 +240,7 @@ export async function runSnapshotDelete(
     spinner.succeed(`Snapshot "${chalk.cyan(snapshotName)}" deleted.`);
   } catch {
     spinner.fail(`Snapshot "${snapshotName}" not found or could not be deleted.`);
+    process.exitCode = 1;
   }
 
   log.blank();

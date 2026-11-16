@@ -98,7 +98,7 @@ export async function runDoctor(): Promise<void> {
       fix: "Run `silo onboard` to set up SILO",
     });
     // Can't check more without config
-    printResults(results);
+    reportResults(results);
     return;
   }
 
@@ -346,7 +346,18 @@ export async function runDoctor(): Promise<void> {
     });
   }
 
+  reportResults(results);
+}
+
+/**
+ * Print the results and set a failing exit code when any check failed, so
+ * `silo doctor` can gate scripts and CI. Warnings alone still exit 0.
+ */
+function reportResults(results: CheckResult[]): void {
   printResults(results);
+  if (results.some((r) => r.status === "fail")) {
+    process.exitCode = 1;
+  }
 }
 
 // ---------------------------------------------------------------------------

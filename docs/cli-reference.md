@@ -183,6 +183,8 @@ silo stop [--name <agent>] [--all]
 4. Writes `proxy.running = false` to config
 5. Removes the `silo-sandbox-net` Docker network (if no other containers attached)
 
+Exits 1 if any container or the proxy could not be stopped. The rest of the shutdown still runs.
+
 **Stopping a named agent:** When `--name` is used, only that specific container is stopped. The proxy and network remain active for other agents.
 
 **Stopping all agents:** When `--all` is used, all containers with the `managed-by=silo` Docker label are discovered and stopped.
@@ -626,6 +628,8 @@ Delete a saved snapshot.
 silo snapshot delete "clean-install"
 ```
 
+Exits 1 if the snapshot doesn't exist or can't be deleted.
+
 ---
 
 ### `silo doctor`
@@ -637,6 +641,8 @@ silo doctor
 ```
 
 Checks: Node.js version, Docker availability, Docker daemon status, config file existence, proxy health, container status.
+
+Exits 1 if any check fails. Warnings alone exit 0, so `silo doctor` can gate a script or CI job.
 
 ---
 
