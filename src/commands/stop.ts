@@ -27,10 +27,15 @@ export async function runStop(opts: StopOptions = {}): Promise<void> {
   await assertDockerAvailable();
 
   let stoppedSomething = false;
+  // What couldn't be stopped. Anything here means a non-zero exit, so scripts
+  // and uninstall.sh don't carry on as if the sandbox were down.
+  const failures: string[] = [];
 
   if (opts.all) {
     // ── Stop ALL silo-managed containers ────────────────────────────────
-    stoppedSomething = await stopAllAgents();
+    const result = await stopAllAgents();
+    stoppedSomething = result.stopped;
+    failures.push(...result.failed);
   } else {
     // ── Stop a single container ────────────────────────────────────────
     const containerName = opts.name ? `silo-${opts.name}` : config.sandbox.containerName;
@@ -50,6 +55,7 @@ export async function runStop(opts: StopOptions = {}): Promise<void> {
       } catch (err) {
         spinner.fail("Failed to stop proxy daemon");
         log.error(err instanceof Error ? err.message : String(err));
+        failures.push("inference proxy");
       }
     } else {
       log.info("Proxy daemon is not running — skipping.");
@@ -66,7 +72,11 @@ export async function runStop(opts: StopOptions = {}): Promise<void> {
     await cleanupSiloNetwork();
   }
 
-  if (stoppedSomething) {
+  if (failures.length > 0) {
+    log.blank();
+    log.error(`Could not stop: ${failures.join(", ")}.`);
+    process.exitCode = 1;
+  } else if (stoppedSomething) {
     log.blank();
     log.success("Sandbox shut down cleanly.");
   }
@@ -99,35 +109,39 @@ async function stopSingleAgent(containerName: string): Promise<boolean> {
   return false;
 }
 
-async function stopAllAgents(): Promise<boolean> {
+async function stopAllAgents(): Promise<{ stopped: boolean; failed: string[] }> {
+  let names: string[];
   try {
     const { stdout } = await execa("docker", [
       "ps", "-a",
       "--filter", "label=managed-by=silo",
       "--format", "{{.Names}}",
     ]);
-
-    const names = stdout.trim().split("\n").filter(Boolean);
-    if (names.length === 0) {
-      log.info("No SILO agent containers found.");
-      return false;
-    }
-
-    let stopped = false;
-    for (const name of names) {
-      const spinner = ora(`Stopping "${name}"…`).start();
-      try {
-        await stopContainer(name);
-        spinner.succeed(`Removed "${name}"`);
-        stopped = true;
-      } catch (err) {
-        spinner.fail(`Failed to stop "${name}": ${err instanceof Error ? err.message : String(err)}`);
-      }
-    }
-    return stopped;
-  } catch {
-    return false;
+    names = stdout.trim().split("\n").filter(Boolean);
+  } catch (err) {
+    log.error(`Could not list SILO containers: ${err instanceof Error ? err.message : String(err)}`);
+    return { stopped: false, failed: ["container list"] };
   }
+
+  if (names.length === 0) {
+    log.info("No SILO agent containers found.");
+    return { stopped: false, failed: [] };
+  }
+
+  let stopped = false;
+  const failed: string[] = [];
+  for (const name of names) {
+    const spinner = ora(`Stopping "${name}"…`).start();
+    try {
+      await stopContainer(name);
+      spinner.succeed(`Removed "${name}"`);
+      stopped = true;
+    } catch (err) {
+      spinner.fail(`Failed to stop "${name}": ${err instanceof Error ? err.message : String(err)}`);
+      failed.push(name);
+    }
+  }
+  return { stopped, failed };
 }
 
 // ---------------------------------------------------------------------------
