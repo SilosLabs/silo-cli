@@ -7,6 +7,7 @@ import {
   compilePolicy,
   evaluateCompiled,
   parsePolicyFile,
+  placeRule,
 } from "../../src/policy/engine.js";
 import type { Policy } from "../../src/policy/engine.js";
 
@@ -256,5 +257,85 @@ rules: []
     );
     const policy = parsePolicyFile(tmpFile);
     expect(policy.description).toBe("A test policy");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// placeRule: where `policy add` inserts a rule so that it takes effect
+// ---------------------------------------------------------------------------
+
+describe("placeRule", () => {
+  const npmPolicy = (): Policy => ({
+    version: "1",
+    name: "npm",
+    default: "deny",
+    rules: [
+      { host: "llm.gateway", action: "allow" },
+      { host: "registry.npmjs.org", action: "allow" },
+      { host: "*.npmjs.org", action: "allow" },
+      { host: "github.com", action: "allow" },
+    ],
+  });
+
+  function add(policy: Policy, rule: Policy["rules"][number]): Policy {
+    const { index } = placeRule(policy, rule);
+    policy.rules.splice(index, 0, rule);
+    return policy;
+  }
+
+  it("puts a deny ahead of the allow wildcard that would shadow it", () => {
+    const policy = npmPolicy();
+    const rule = { host: "evil.npmjs.org", action: "deny" as const };
+    const placed = placeRule(policy, rule);
+    expect(placed.index).toBe(2);
+    expect(placed.ahead?.host).toBe("*.npmjs.org");
+    expect(evaluate(add(policy, rule), "evil.npmjs.org")).toBe("deny");
+    // Other hosts under the wildcard are still allowed.
+    expect(evaluate(policy, "cdn.npmjs.org")).toBe("allow");
+  });
+
+  it("appending is what used to happen, and it left the host allowed", () => {
+    const policy = npmPolicy();
+    policy.rules.push({ host: "evil.npmjs.org", action: "deny" });
+    expect(evaluate(policy, "evil.npmjs.org")).toBe("allow");
+  });
+
+  it("places a deny wildcard ahead of a broader allow wildcard", () => {
+    const policy = npmPolicy();
+    const rule = { host: "*.evil.npmjs.org", action: "deny" as const };
+    expect(placeRule(policy, rule).ahead?.host).toBe("*.npmjs.org");
+    expect(evaluate(add(policy, rule), "x.evil.npmjs.org")).toBe("deny");
+  });
+
+  it("appends a rule that no earlier rule contradicts", () => {
+    const policy = npmPolicy();
+    const placed = placeRule(policy, { host: "api.example.com", action: "allow" });
+    expect(placed).toEqual({ index: policy.rules.length });
+  });
+
+  it("appends when the earlier match already has the same action", () => {
+    const policy = npmPolicy();
+    const placed = placeRule(policy, { host: "cdn.npmjs.org", action: "allow" });
+    expect(placed.index).toBe(policy.rules.length);
+    expect(placed.ahead).toBeUndefined();
+  });
+
+  it("matches existing patterns case-insensitively, like evaluation does", () => {
+    const policy = npmPolicy();
+    const rule = { host: "EVIL.NPMJS.ORG", action: "deny" as const };
+    expect(placeRule(policy, rule).ahead?.host).toBe("*.npmjs.org");
+    expect(evaluate(add(policy, rule), "evil.npmjs.org")).toBe("deny");
+  });
+
+  it("puts an allow ahead of a deny that would block it", () => {
+    const policy: Policy = {
+      version: "1",
+      name: "blocklist",
+      default: "allow",
+      rules: [{ host: "*.example.com", action: "deny" }],
+    };
+    const rule = { host: "docs.example.com", action: "allow" as const };
+    expect(placeRule(policy, rule)).toEqual({ index: 0, ahead: policy.rules[0] });
+    expect(evaluate(add(policy, rule), "docs.example.com")).toBe("allow");
   });
 });

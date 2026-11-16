@@ -192,10 +192,12 @@ silo policy add pypi.org --comment "PyPI package index"
 ```
 
 **Behaviour:**
-1. If no policy file exists, bootstraps one from the baseline (using the mode chosen during onboard)
+1. If no policy file exists, bootstraps one from the `standard` preset (`llm.gateway` plus its allow rules) and says so
 2. Checks for duplicate host patterns (skips if already present)
-3. Appends the new rule to the rules list
+3. Places the new rule where it takes effect. Rules are first-match, so if an earlier rule with the opposite action already matches the host, the new rule goes just ahead of it. For example, `silo policy add evil.npmjs.org --action deny` lands before `*.npmjs.org`. Otherwise the rule is appended.
 4. Writes the updated policy and hot-reloads the proxy
+
+Negated patterns such as `!evil.com` are rejected: in picomatch they match every host *except* the one named, so a single rule would decide almost all traffic.
 
 ---
 

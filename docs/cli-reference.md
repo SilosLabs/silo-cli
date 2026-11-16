@@ -393,7 +393,9 @@ silo policy add <host> [--action <allow|deny>] [--comment <text>]
 | `--comment <text>` | string | — | Optional comment for the rule |
 
 - **Idempotent** — skips if the host already exists in the policy
-- **Auto-creates** the policy file if it doesn't exist
+- **Takes effect** — rules are first-match, so a rule is inserted ahead of any earlier rule with the opposite action that matches the host (a `deny` for `evil.npmjs.org` goes before `allow *.npmjs.org`); otherwise it's appended
+- **Rejects negated patterns** (`!host`), which would match every other host
+- **Auto-creates** the policy file from the `standard` preset if it doesn't exist
 - **Auto-reloads** the proxy daemon via SIGHUP
 - **Persists** the policy file path in config if not already set
 

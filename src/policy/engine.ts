@@ -171,6 +171,30 @@ export function evaluate(policy: Policy, host: string): "allow" | "deny" {
   return evaluateCompiled(compilePolicy(policy), host);
 }
 
+/**
+ * Work out where a new rule must go for it to take effect.
+ *
+ * Rules are first-match, so appending a rule does nothing when an earlier rule
+ * with the opposite action already matches its host: `deny evil.npmjs.org`
+ * placed after `allow *.npmjs.org` is never reached. This returns the index of
+ * the first such earlier rule (the new rule goes there, just ahead of it) and
+ * the rule it has to precede. With no conflict, the rule is appended.
+ *
+ * The new rule's host is tested as a literal against the existing patterns, so
+ * `*.evil.npmjs.org` is also placed ahead of `*.npmjs.org`.
+ */
+export function placeRule(
+  policy: Policy,
+  rule: PolicyRule,
+): { index: number; ahead?: PolicyRule } {
+  const index = policy.rules.findIndex(
+    (r) => r.action !== rule.action && picomatch(r.host, { nocase: true })(rule.host),
+  );
+  return index === -1
+    ? { index: policy.rules.length }
+    : { index, ahead: policy.rules[index] };
+}
+
 // ---------------------------------------------------------------------------
 // Hot-reload watcher
 // ---------------------------------------------------------------------------

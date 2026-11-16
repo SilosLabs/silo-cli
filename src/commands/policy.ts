@@ -12,7 +12,7 @@
 import chalk from "chalk";
 import Table from "cli-table3";
 import { readConfig, patchConfig } from "../config/manager.js";
-import { parsePolicyFile, evaluate } from "../policy/engine.js";
+import { parsePolicyFile, evaluate, placeRule } from "../policy/engine.js";
 import {
   listPresets,
   getPreset,
@@ -212,6 +212,16 @@ export function runPolicyAdd(
     process.exit(1);
   }
 
+  // picomatch treats a leading "!" as negation, so "!evil.com" matches every
+  // host except evil.com: as a first-match rule it would decide almost all traffic.
+  if (host.startsWith("!")) {
+    log.error(`Negated host patterns aren't supported: "${host}".`);
+    log.info(
+      `A rule for "${host}" would match every host except ${host.slice(1)}. Use a positive pattern instead.`,
+    );
+    process.exit(1);
+  }
+
   const targetPath = resolve(config.sandbox.policyFile ?? defaultPolicyPath());
   let policy: ReturnType<typeof parsePolicyFile>;
 
@@ -230,6 +240,9 @@ export function runPolicyAdd(
         ...(standardPreset?.rules ?? []),
       ],
     };
+    log.info(
+      `No policy file yet: creating one from the standard preset (${policy.rules.length} allow rules). Review them with ${chalk.cyan("silo policy show")}.`,
+    );
   }
 
   // Check if host already exists
@@ -239,8 +252,11 @@ export function runPolicyAdd(
     return;
   }
 
+  // Rules are first-match: insert ahead of any earlier rule that would
+  // otherwise decide this host the other way, or the new rule never applies.
   const newRule = { host, action, ...(opts.comment ? { comment: opts.comment } : {}) };
-  policy.rules.push(newRule);
+  const { index, ahead } = placeRule(policy, newRule);
+  policy.rules.splice(index, 0, newRule);
 
   writePolicyFile(targetPath, policy);
 
@@ -249,7 +265,13 @@ export function runPolicyAdd(
     patchConfig({ sandbox: { policyFile: targetPath } });
   }
 
-  log.success(`Added rule: ${chalk.cyan(host)} → ${chalk.green(action)}`);
+  const shown = action === "allow" ? chalk.green(action) : chalk.red(action);
+  log.success(`Added rule: ${chalk.cyan(host)} → ${shown}`);
+  if (ahead) {
+    log.info(
+      `Placed before "${ahead.host}" (${ahead.action}), which would otherwise decide ${host} first.`,
+    );
+  }
   log.info(`Policy file: ${chalk.dim(targetPath)}`);
 
   reloadProxyIfRunning();
