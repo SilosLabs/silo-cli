@@ -88,7 +88,6 @@ export async function runQuickstart(opts: QuickstartOptions): Promise<void> {
 
     const { runBuild } = await import("./build.js");
     await runBuild({
-      noCache: false,
       framework: opts.framework,
       browser: opts.browser,
     });
