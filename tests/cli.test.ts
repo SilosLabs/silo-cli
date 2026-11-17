@@ -75,15 +75,28 @@ esac
 describe("exit codes when a command fails", () => {
   let fakeBin: string;
   let configuredHome: string;
+  let legacyHome: string;
 
   beforeAll(async () => {
     fakeBin = mkdtempSync(join(tmpdir(), "silo-fake-docker-"));
     writeFileSync(join(fakeBin, "docker"), FAKE_DOCKER);
     chmodSync(join(fakeBin, "docker"), 0o755);
 
-    // A real, valid config written through the config manager.
-    configuredHome = mkdtempSync(join(tmpdir(), "silo-cli-home-"));
-    mkdirSync(join(configuredHome, "ws"));
+    configuredHome = await homeWithConfig((h) => join(h, "ws"));
+    // A config saved before workspace paths were expanded: "~/ws" verbatim.
+    legacyHome = await homeWithConfig(() => "~/ws");
+  }, 30_000);
+
+  afterAll(() => {
+    rmSync(fakeBin, { recursive: true, force: true });
+    rmSync(configuredHome, { recursive: true, force: true });
+    rmSync(legacyHome, { recursive: true, force: true });
+  });
+
+  /** A temp HOME holding a real, valid config written through the config manager. */
+  async function homeWithConfig(workspace: (homeDir: string) => string): Promise<string> {
+    const homeDir = mkdtempSync(join(tmpdir(), "silo-cli-home-"));
+    mkdirSync(join(homeDir, "ws"));
     const write = `
       const { writeConfig } = await import("./src/config/manager.ts");
       const { SiloConfigSchema } = await import("./src/config/schema.ts");
@@ -91,18 +104,14 @@ describe("exit codes when a command fails", () => {
         version: "1",
         llm: { provider: "openai", apiKey: "sk-test-key", model: "gpt-4o" },
         sandbox: { image: "silo-sandbox:latest", containerName: "silo-agent",
-          workspacePath: ${JSON.stringify(join(configuredHome, "ws"))}, cpuLimit: "1.0", memoryLimit: "1g", autoOpenLogs: false },
+          workspacePath: ${JSON.stringify(workspace(homeDir))}, cpuLimit: "1.0", memoryLimit: "1g", autoOpenLogs: false },
       }));`;
     await execa("node", ["--import", "tsx", "--input-type=module", "-e", write], {
       cwd: repoRoot,
-      env: isolatedEnv(configuredHome),
+      env: isolatedEnv(homeDir),
     });
-  }, 30_000);
-
-  afterAll(() => {
-    rmSync(fakeBin, { recursive: true, force: true });
-    rmSync(configuredHome, { recursive: true, force: true });
-  });
+    return homeDir;
+  }
 
   function siloWith(homeDir: string, fail: string, ...args: string[]) {
     return execa("node", ["--import", "tsx", "src/cli.ts", ...args], {
@@ -138,5 +147,12 @@ describe("exit codes when a command fails", () => {
   it("snapshot delete still exits 0 when the snapshot is deleted", async () => {
     const result = await siloWith(configuredHome, "", "snapshot", "delete", "present");
     expect(result.exitCode).toBe(0);
+  }, 30_000);
+
+  it("doctor checks the expanded workspace path from an older ~/ config", async () => {
+    const result = await siloWith(legacyHome, "", "doctor");
+    const out = result.stdout + result.stderr;
+    expect(out).toContain(`Workspace: ${join(legacyHome, "ws")}`);
+    expect(out).not.toMatch(/Directory does not exist/);
   }, 30_000);
 });

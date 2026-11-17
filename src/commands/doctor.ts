@@ -22,6 +22,7 @@ import { resolve } from "node:path";
 import { execa } from "execa";
 import { readConfig, configPath } from "../config/manager.js";
 import { log, printBanner, section } from "../utils/logger.js";
+import { expandHostPath } from "../utils/paths.js";
 import { isContainerRunning, containerExists } from "../utils/system.js";
 import { isProxyAlive, readPid } from "../utils/pid.js";
 import { proxyLogPath } from "../proxy/spawn.js";
@@ -331,18 +332,22 @@ export async function runDoctor(): Promise<void> {
   }
 
   // ── 9. Workspace ──────────────────────────────────────────────────────
-  if (existsSync(config.sandbox.workspacePath)) {
+  // Check the path start will actually mount: a config saved with "~/…"
+  // would otherwise be reported missing, and `mkdir -p "~/…"` (quoted, so
+  // the shell won't expand it) would create a literal "~" directory.
+  const workspacePath = expandHostPath(config.sandbox.workspacePath);
+  if (existsSync(workspacePath)) {
     results.push({
       name: "Workspace",
       status: "pass",
-      message: config.sandbox.workspacePath,
+      message: workspacePath,
     });
   } else {
     results.push({
       name: "Workspace",
       status: "warn",
-      message: `Directory does not exist: ${config.sandbox.workspacePath}`,
-      fix: `Create it with: mkdir -p "${config.sandbox.workspacePath}"`,
+      message: `Directory does not exist: ${workspacePath}`,
+      fix: `Create it with: mkdir -p "${workspacePath}"`,
     });
   }
 

@@ -105,7 +105,7 @@ silo start [--policy <file>] [--rebuild] [--name <agent>] [--workspace <path>] [
 | `-p, --policy <file>` | string | from onboard | Path to a YAML policy file |
 | `--rebuild` | boolean | `false` | Rebuild the sandbox image before starting |
 | `-n, --name <agent>` | string | from config | Name the agent (creates container `silo-<name>`) |
-| `-w, --workspace <path>` | string | from config | Override the workspace path for this agent |
+| `-w, --workspace <path>` | string | from config | Override the workspace path for this agent. `~` and relative paths are resolved to an absolute path |
 | `--desktop` | boolean | `false` | Mount the host Desktop at `/host/Desktop` |
 | `--mount <spec>` | string | — | Mount a host path into `/host/...`, e.g. `~/Downloads:/host/Downloads:ro` |
 | `-f, --framework <name>` | string | — | Start with a specific framework (uses framework image) |

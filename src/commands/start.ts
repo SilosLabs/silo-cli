@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { execa } from "execa";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { readConfig, patchConfig } from "../config/manager.js";
 import { startContainer } from "../docker/runner.js";
 import { SILO_NETWORK } from "../docker/templates.js";
@@ -25,6 +25,7 @@ import {
 import type { FrameworkDefinition } from "../frameworks/registry.js";
 import type { HostMount, IntegrationConfig } from "../config/schema.js";
 import { applyPreset, getPreset } from "../policy/presets.js";
+import { expandHostPath } from "../utils/paths.js";
 
 interface StartOptions {
   policy?: string;
@@ -131,7 +132,10 @@ export async function runStart(opts: StartOptions): Promise<void> {
     containerName,
     image,
     memoryLimit: browserMemory.memoryLimit,
-    ...(opts.workspace ? { workspacePath: opts.workspace } : {}),
+    // Expand ~ and resolve relative paths, for --workspace and for configs
+    // saved before onboard did this. A raw path becomes `-v <path>:/workspace`,
+    // which Docker rejects (~/ws) or turns into a named volume (ws).
+    workspacePath: expandHostPath(opts.workspace ?? config.sandbox.workspacePath),
     ...(opts.policy ? { policyFile: opts.policy } : {}),
     ...(hostMounts.length > 0 ? { hostMounts } : {}),
     ...(framework ? { activeFramework: framework.id } : {}),
@@ -424,12 +428,6 @@ function parseHostMountSpec(spec: string): HostMount {
   }
 
   return { source, target, mode };
-}
-
-function expandHostPath(path: string): string {
-  if (path === "~") return homedir();
-  if (path.startsWith("~/")) return resolve(homedir(), path.slice(2));
-  return resolve(path);
 }
 
 export function ensureBrowserMemoryLimit(memoryLimit: string): {

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 
 /**
  * Unit tests for the onboard command.
@@ -82,6 +84,28 @@ describe("onboard command", () => {
     expect(saved.sandbox.cpuLimit).toBe("1.0");
     expect(saved.sandbox.policyFile).toBe("/tmp/test-policy.yaml");
     expect(saved.version).toBe("1");
+  });
+
+  it.each([
+    ["~/silo-ws", () => join(homedir(), "silo-ws")],
+    ["silo-ws", () => resolve(process.cwd(), "silo-ws")],
+  ])("saves the workspace %s as an absolute path", async (answer, expected) => {
+    const inquirer = (await import("inquirer")).default;
+    const { writeConfig } = await import("../../src/config/manager.js");
+
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ provider: "anthropic" })
+      .mockResolvedValueOnce({ apiKey: "sk-ant-test-key-1234" })
+      .mockResolvedValueOnce({ model: "claude-sonnet-4-6" })
+      .mockResolvedValueOnce({ workspacePath: answer })
+      .mockResolvedValueOnce({ cpuLimit: "1.0", memoryLimit: "512m" })
+      .mockResolvedValueOnce({ securityMode: "strict" });
+
+    const { runOnboard } = await import("../../src/commands/onboard.js");
+    await runOnboard({ force: false });
+
+    const saved = (writeConfig as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(saved.sandbox.workspacePath).toBe(expected());
   });
 
   it("exits early when already configured and --force is not passed", async () => {
