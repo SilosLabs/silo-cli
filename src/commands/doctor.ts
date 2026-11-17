@@ -22,7 +22,7 @@ import { resolve } from "node:path";
 import { execa } from "execa";
 import { readConfig, configPath } from "../config/manager.js";
 import { log, printBanner, section } from "../utils/logger.js";
-import { expandHostPath } from "../utils/paths.js";
+import { resolveWorkspaceMount } from "../utils/workspace.js";
 import { isContainerRunning, containerExists } from "../utils/system.js";
 import { isProxyAlive, readPid } from "../utils/pid.js";
 import { proxyLogPath } from "../proxy/spawn.js";
@@ -332,23 +332,16 @@ export async function runDoctor(): Promise<void> {
   }
 
   // ── 9. Workspace ──────────────────────────────────────────────────────
-  // Check the path start will actually mount: a config saved with "~/…"
-  // would otherwise be reported missing, and `mkdir -p "~/…"` (quoted, so
-  // the shell won't expand it) would create a literal "~" directory.
-  const workspacePath = expandHostPath(config.sandbox.workspacePath);
-  if (existsSync(workspacePath)) {
-    results.push({
-      name: "Workspace",
-      status: "pass",
-      message: workspacePath,
-    });
+  // Check what `silo start` would actually mount, so a config saved with
+  // "~/…" isn't reported missing, a bare name that is really a Docker volume
+  // is recognised, and the mkdir hint uses the expanded path.
+  const workspace = await resolveWorkspaceMount(undefined, config.sandbox.workspacePath);
+  if (!workspace.ok) {
+    results.push({ name: "Workspace", status: "warn", message: workspace.error, fix: workspace.hint });
+  } else if (workspace.volume) {
+    results.push({ name: "Workspace", status: "warn", message: workspace.warning ?? workspace.source, fix: workspace.hint });
   } else {
-    results.push({
-      name: "Workspace",
-      status: "warn",
-      message: `Directory does not exist: ${workspacePath}`,
-      fix: `Create it with: mkdir -p "${workspacePath}"`,
-    });
+    results.push({ name: "Workspace", status: "pass", message: workspace.source });
   }
 
   reportResults(results);

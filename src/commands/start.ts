@@ -26,6 +26,7 @@ import type { FrameworkDefinition } from "../frameworks/registry.js";
 import type { HostMount, IntegrationConfig } from "../config/schema.js";
 import { applyPreset, getPreset } from "../policy/presets.js";
 import { expandHostPath } from "../utils/paths.js";
+import { resolveWorkspaceMount } from "../utils/workspace.js";
 
 interface StartOptions {
   policy?: string;
@@ -85,6 +86,16 @@ export async function runStart(opts: StartOptions): Promise<void> {
     process.exit(1);
   }
 
+  // ── Resolve the workspace mount ──────────────────────────────────────────
+  const workspace = await resolveWorkspaceMount(opts.workspace, config.sandbox.workspacePath);
+  if (!workspace.ok) {
+    log.error(workspace.error);
+    log.info(workspace.hint);
+    process.exit(1);
+  }
+  if (workspace.warning) log.warn(workspace.warning);
+  if (workspace.hint) log.info(workspace.hint);
+
   // ── Guard: already running ───────────────────────────────────────────────
   if (await isContainerRunning(containerName)) {
     log.warn(`Sandbox "${containerName}" is already running.`);
@@ -132,10 +143,9 @@ export async function runStart(opts: StartOptions): Promise<void> {
     containerName,
     image,
     memoryLimit: browserMemory.memoryLimit,
-    // Expand ~ and resolve relative paths, for --workspace and for configs
-    // saved before onboard did this. A raw path becomes `-v <path>:/workspace`,
-    // which Docker rejects (~/ws) or turns into a named volume (ws).
-    workspacePath: expandHostPath(opts.workspace ?? config.sandbox.workspacePath),
+    // Becomes `-v <source>:/workspace`: an absolute host folder, or an existing
+    // named volume from an older config (see resolveWorkspaceMount).
+    workspacePath: workspace.source,
     ...(opts.policy ? { policyFile: opts.policy } : {}),
     ...(hostMounts.length > 0 ? { hostMounts } : {}),
     ...(framework ? { activeFramework: framework.id } : {}),
@@ -169,7 +179,7 @@ export async function runStart(opts: StartOptions): Promise<void> {
   }
 
   log.info(`Agent:     ${chalk.dim(containerName)}`);
-  log.info(`Workspace: ${chalk.dim(effectiveSandbox.workspacePath)}`);
+  log.info(`Workspace: ${chalk.dim(effectiveSandbox.workspacePath)}${workspace.volume ? chalk.dim(" (Docker volume)") : ""}`);
   if (opts.browser) {
     log.info(`Browser:   ${chalk.dim("enabled (Chromium inside sandbox)")}`);
     log.info(`Memory:    ${chalk.dim(effectiveSandbox.memoryLimit)}${browserMemory.bumped ? chalk.dim(` (auto-raised for browser mode from ${config.sandbox.memoryLimit})`) : ""}`);

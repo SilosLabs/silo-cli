@@ -105,7 +105,7 @@ silo start [--policy <file>] [--rebuild] [--name <agent>] [--workspace <path>] [
 | `-p, --policy <file>` | string | from onboard | Path to a YAML policy file |
 | `--rebuild` | boolean | `false` | Rebuild the sandbox image before starting |
 | `-n, --name <agent>` | string | from config | Name the agent (creates container `silo-<name>`) |
-| `-w, --workspace <path>` | string | from config | Override the workspace path for this agent. `~` and relative paths are resolved to an absolute path |
+| `-w, --workspace <path>` | string | from config | Override the workspace path for this agent. `~` and relative paths are resolved to an absolute path; an empty value falls back to the config |
 | `--desktop` | boolean | `false` | Mount the host Desktop at `/host/Desktop` |
 | `--mount <spec>` | string | — | Mount a host path into `/host/...`, e.g. `~/Downloads:/host/Downloads:ro` |
 | `-f, --framework <name>` | string | — | Start with a specific framework (uses framework image) |
@@ -159,6 +159,8 @@ Capability profiles are additive:
     silo policy apply pypi — allow pip installs
     silo stop             — shut down the sandbox
 ```
+
+**Workspace mount:** `/workspace` is bind-mounted from the configured folder, which must already exist (as with `--mount`). `~` is expanded. A relative path saved in the config is refused, because the folder it points to would depend on where you run `silo start`; set an absolute path instead. Older configs could hold a bare name such as `ws`, which Docker mounts as the *named volume* `ws`. If that volume exists, `start` keeps mounting it and prints how to move the files to a host folder.
 
 ---
 

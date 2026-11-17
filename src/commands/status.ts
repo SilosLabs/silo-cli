@@ -4,6 +4,7 @@ import { readConfig, configPath } from "../config/manager.js";
 import { inspectContainer, containerStats } from "../docker/runner.js";
 import { log, printBanner, section } from "../utils/logger.js";
 import { isContainerRunning, containerExists } from "../utils/system.js";
+import { expandHome } from "../utils/paths.js";
 import { isProxyAlive, readPid, pidFilePath } from "../utils/pid.js";
 import { readAuditLog, auditLogPath, getSessionId } from "../audit/audit.js";
 
@@ -65,7 +66,9 @@ export async function runStatus(): Promise<void> {
     ["Container", containerName],
     ["Status", statusLabel],
     ["Image", image],
-    ["Workspace", chalk.dim(config.sandbox.workspacePath)],
+    // Expand ~ to match what `silo start` mounts; a relative legacy value is
+    // shown as stored (start refuses it rather than guessing a base folder).
+    ["Workspace", chalk.dim(expandHome(config.sandbox.workspacePath))],
     ["CPU limit", config.sandbox.cpuLimit],
     ["Memory limit", config.sandbox.memoryLimit],
   );

@@ -47,6 +47,18 @@ export async function containerExists(name: string): Promise<boolean> {
 }
 
 /**
+ * Returns true if a Docker named volume with the given name exists.
+ */
+export async function dockerVolumeExists(name: string): Promise<boolean> {
+  try {
+    await execa("docker", ["volume", "inspect", name], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Returns the current Node.js version as a semver string.
  */
 export function nodeVersion(): string {
