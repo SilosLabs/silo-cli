@@ -11,6 +11,7 @@ import { writeConfig, readConfig } from "../config/manager.js";
 import type { SiloConfig, LLMProvider } from "../config/schema.js";
 import { log, section } from "../utils/logger.js";
 import { assertDockerAvailable } from "../utils/system.js";
+import { expandHostPath } from "../utils/paths.js";
 import {
   defaultPolicyPath,
   writePolicyFile,
@@ -316,7 +317,7 @@ export async function runOnboard(opts: { force: boolean }): Promise<void> {
   section("Step 4 — Workspace");
 
   const defaultWorkspace = join(homedir(), "silo-workspace");
-  const { workspacePath } = await inquirer.prompt<{ workspacePath: string }>([
+  const { workspacePath: workspaceAnswer } = await inquirer.prompt<{ workspacePath: string }>([
     {
       type: "input",
       name: "workspacePath",
@@ -326,6 +327,9 @@ export async function runOnboard(opts: { force: boolean }): Promise<void> {
         v.trim().length > 0 ? true : "Path cannot be empty.",
     },
   ]);
+  // The prompt returns the text as typed: expand ~ and make it absolute, or
+  // mkdir creates a literal "./~/…" and Docker can't bind-mount it.
+  const workspacePath = expandHostPath(workspaceAnswer.trim());
 
   log.blank();
   section("Step 5 — Resource Limits");

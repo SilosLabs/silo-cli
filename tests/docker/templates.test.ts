@@ -320,3 +320,22 @@ describe("buildRunFlags gateway modes", () => {
     expect(flags[flags.length - 1]).toBe("silo-sandbox:latest");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Workspace mount
+// ---------------------------------------------------------------------------
+
+describe("buildRunFlags workspace mount", () => {
+  function volumeFlag(workspacePath: string): string | undefined {
+    const flags = buildRunFlags({ ...baseSandbox, workspacePath }, baseProxy);
+    return flags.find((f, i) => flags[i - 1] === "--volume" && f.endsWith(":/workspace:rw"));
+  }
+
+  it("mounts the resolved host folder read-write at /workspace", () => {
+    expect(volumeFlag("/home/user/project")).toBe("/home/user/project:/workspace:rw");
+  });
+
+  it("passes a named volume through unchanged (an older bare-name config)", () => {
+    expect(volumeFlag("ws")).toBe("ws:/workspace:rw");
+  });
+});
